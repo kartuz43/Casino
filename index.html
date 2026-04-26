@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Royal Empire | Sovereign Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@600&display=swap');
+
+        :root {
+            --gold: #d4af37;
+            --gold-light: #f1d592;
+            --dark-marble: #0d0d0d;
+            --casino-red: #5e0b15;
+        }
+
+        body {
+            background-color: var(--dark-marble); color: #fff;
+            font-family: 'Cormorant Garamond', serif; margin: 0; display: flex; height: 100vh; overflow: hidden;
+            background-image: radial-gradient(circle, #1a1a1a 0%, #000 100%); user-select: none;
+        }
+
+        #sidebar {
+            width: 260px; background: #000; border-right: 2px solid var(--gold);
+            display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        }
+
+        h2 { font-family: 'Cinzel', serif; color: var(--gold); text-align: center; border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; letter-spacing: 2px; }
+
+        .nav-btn {
+            background: transparent; color: #aaa; border: 1px solid transparent;
+            padding: 12px; margin-bottom: 5px; cursor: pointer;
+            font-family: 'Cinzel', serif; font-size: 0.9rem; text-align: left; transition: 0.3s;
+        }
+
+        .nav-btn:hover, .active-nav { color: var(--gold-light); border-left: 3px solid var(--gold); background: rgba(212, 175, 55, 0.1); }
+
+        #main { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        #top-bar {
+            background: rgba(0,0,0,0.9); padding: 15px 40px; border-bottom: 2px solid var(--gold);
+            display: flex; justify-content: space-between; font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--gold);
+        }
+
+        #viewport { flex-grow: 1; padding: 30px; overflow-y: auto; background: radial-gradient(circle at center, var(--casino-red) 0%, #000 100%); }
+
+        .screen { display: none; text-align: center; animation: fadeIn 0.5s; }
+        .active-screen { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card-box { background: rgba(0,0,0,0.8); border: 2px solid var(--gold); padding: 25px; border-radius: 12px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.7); min-width: 450px;}
+
+        .btn {
+            background: linear-gradient(135deg, #d4af37 0%, #8a6d3b 100%);
+            border: 1px solid #222; color: #000; padding: 12px 24px;
+            font-family: 'Cinzel', serif; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s;
+        }
+        .btn:hover:not(:disabled) { background: var(--gold-light); transform: scale(1.05); }
+        .btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        /* Plinko */
+        .plinko-labels { display: flex; width: 400px; margin: 5px auto; }
+        .plinko-label { flex: 1; border: 1px solid var(--gold); background: #000; color: var(--gold); font-family: 'Cinzel'; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; height: 35px; }
+
+        /* Slots */
+        #slot-display { font-size: 5rem; background: #111; padding: 20px; border: 4px inset var(--gold); border-radius: 10px; margin: 20px; letter-spacing: 15px; }
+
+        /* Shop */
+        #gadget-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .shop-item { background: rgba(0,0,0,0.9); border: 2px solid var(--gold); padding: 20px; border-radius: 10px; }
+
+        /* Scratch Card */
+        #scratch-container { position: relative; width: 400px; height: 200px; margin: 20px auto; border: 4px solid var(--gold); background: #000; overflow: hidden; }
+        #scratch-canvas { position: absolute; top: 0; left: 0; cursor: crosshair; z-index: 2; }
+        #scratch-prize { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-family: 'Cinzel'; z-index: 1; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>Royal Empire</h2>
+    <button class="nav-btn active-nav" onclick="show('home', this)">Übersicht</button>
+    <button class="nav-btn" onclick="show('plinko', this)">Plinko Gold</button>
+    <button class="nav-btn" onclick="show('scratch', this)">Rubbellose</button>
+    <button class="nav-btn" onclick="show('slots', this)">Royal Slots</button>
+    <button class="nav-btn" onclick="show('roulette', this)">VIP Roulette</button>
+    <button class="nav-btn" onclick="show('shop', this)">Elite Boutique</button>
+</div>
+
+<div id="main">
+    <div id="top-bar">
+        <span>Vermögen: <span id="cash">1000</span> $</span>
+        <span id="mult-display">MULT: x1.0</span>
+    </div>
+
+    <div id="viewport">
+        <div id="home" class="screen active-screen">
+            <h1 style="font-family: 'Cinzel'; font-size: 4rem; color: var(--gold);">The Sovereign</h1>
+            <p style="font-size: 1.5rem; color: var(--gold-light);">Willkommen zurück, Eure Eminenz.</p>
+            <div style="font-size: 8rem; margin-top: 50px;">🏛️💎👑</div>
+        </div>
+
+        <div id="plinko" class="screen">
+            <div class="card-box">
+                <canvas id="plinkoCanvas" width="400" height="380"></canvas>
+                <div class="plinko-labels" id="plinko-labels-row"></div>
+                <div style="margin-top: 20px;">
+                    Einsatz: <input type="number" id="p-bet" style="background:#000; color:var(--gold); border:1px solid var(--gold); padding:8px; width:100px;" value="100">
+                    <button class="btn" onclick="dropPlinko()">Wurf</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="slots" class="screen">
+            <div class="card-box">
+                <h2>Royal Slots</h2>
+                <div id="slot-display">🍒🍒🍒</div>
+                <button class="btn" onclick="playSlots()">Drehen (500$)</button>
+            </div>
+        </div>
+
+        <div id="scratch" class="screen">
+            <div class="card-box">
+                <h2>Exklusive Rubbellose</h2>
+                <div id="scratch-selection">
+                    <button class="btn" onclick="buyScratch(500, 5000, 'Bronze-Los')">Premium (500$)</button><br>
+                    <button class="btn" style="background: linear-gradient(135deg, #10b981 0%, #064e3b 100%); color: #fff;" onclick="buyScratch(50000, 1000000, 'Smaragd-Los')">Smaragd (50.000$)</button><br>
+                    <button class="btn" style="background: linear-gradient(135deg, #fff 0%, var(--gold) 100%);" onclick="buyScratch(1000000, 50000000, 'Sovereign-Los')">Ultimate Sovereign (1 Mio.$)</button><br>
+                    <button id="all-in-btn" class="btn" style="display:none; background:red; color:#fff;" onclick="buyScratch(cash, cash*2, 'Sacrifice')">ROYAL SACRIFICE</button>
+                </div>
+                <div id="scratch-container" style="display:none;">
+                    <div id="scratch-prize">0$</div>
+                    <canvas id="scratch-canvas" width="400" height="200"></canvas>
+                </div>
+                <p id="s-status" style="margin-top:15px; color:var(--gold-light); font-style:italic;">Wählen Sie Ihr Glück.</p>
+            </div>
+        </div>
+
+        <div id="roulette" class="screen">
+            <div class="card-box">
+                <h2>VIP Roulette</h2>
+                <canvas id="roulette-canvas" width="450" height="450"></canvas>
+                <div style="margin-top: 20px;">
+                    <button class="btn" style="background:#a00; color:#fff" onclick="setRouBet('red')">ROT</button>
+                    <button class="btn" style="background:#060; color:#fff" onclick="setRouBet('green')">GRÜN (x14)</button>
+                    <button class="btn" style="background:#111; color:#fff" onclick="setRouBet('black')">SCHWARZ</button>
+                    <button id="rouSpin" class="btn" onclick="startRoulette()" disabled>SPIN (1k)</button>
+                </div>
+                <h3 id="rou-res" style="color:var(--gold); font-family:'Cinzel';">Einsatz wählen</h3>
+            </div>
+        </div>
+
+        <div id="shop" class="screen">
+            <h1 style="font-family:'Cinzel'; color:var(--gold);">Die Boutique</h1>
+            <div id="gadget-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cash = 1000;
+    let multiplier = 1.0;
+    let rBet = null;
+    let isBusy = false;
+
+    // --- SHOP DATA ---
+    const powerUpgrades = [
+        {n: "Smaragd-Ring", c: 5000, m: 2.5},
+        {n: "Goldene Rolex", c: 25000, m: 10},
+        {n: "V12 Sportwagen", c: 200000, m: 50},
+        {n: "Privatjet", c: 1500000, m: 250},
+        {n: "Mega-Yacht", c: 10000000, m: 1000},
+        {n: "Raumstation", c: 1000000000, m: 100000}
+    ];
+
+    function updateUI() {
+        document.getElementById('cash').innerText = Math.floor(cash).toLocaleString();
+        document.getElementById('mult-display').innerText = "MULT: x" + multiplier.toLocaleString();
+        if(cash >= 10000000) document.getElementById('all-in-btn').style.display = 'inline-block';
+    }
+
+    function show(id, btn) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+        document.getElementById(id).classList.add('active-screen');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+        if(btn) btn.classList.add('active-nav');
+    }
+
+    // --- SLOTS ---
+    const slotIcons = ["🍒", "🍋", "🔔", "💎", "👑", "7️⃣"];
+    function playSlots() {
+        if(cash < 500 || isBusy) return;
+        cash -= 500; isBusy = true; updateUI();
+        let c = 0;
+        let iv = setInterval(() => {
+            let s1 = slotIcons[Math.floor(Math.random()*slotIcons.length)];
+            let s2 = slotIcons[Math.floor(Math.random()*slotIcons.length)];
+            let s3 = slotIcons[Math.floor(Math.random()*slotIcons.length)];
+            document.getElementById('slot-display').innerText = s1 + s2 + s3;
+            if(++c > 15) {
+                clearInterval(iv); isBusy = false;
+                if(s1 === s2 && s2 === s3) { cash += 25000 * multiplier; alert("JACKPOT!"); }
+                updateUI();
+            }
+        }, 80);
+    }
+
+    // --- ROULETTE ---
+    const rCanv = document.getElementById('roulette-canvas'); const rCtx = rCanv.getContext('2d');
+    const rNums = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    let rAng = 0, bAng = 0, bSpeed = 0, bRad = 185;
+
+    function drawRoulette() {
+        rCtx.clearRect(0,0,450,450); rCtx.save(); rCtx.translate(225,225);
+        rCtx.beginPath(); rCtx.fillStyle = "#d4af37"; rCtx.arc(0,0,210,0,7); rCtx.fill();
+        rCtx.beginPath(); rCtx.fillStyle = "#3d1f05"; rCtx.arc(0,0,200,0,7); rCtx.fill();
+        rCtx.save(); rCtx.rotate(rAng);
+        for(let i=0; i<37; i++) {
+            rCtx.beginPath(); rCtx.fillStyle = i==0?'#006400':([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(rNums[i])?'#8b0000':'#111');
+            rCtx.moveTo(0,0); rCtx.arc(0,0,180, i*(Math.PI*2/37), (i+1)*(Math.PI*2/37)); rCtx.fill();
+            rCtx.save(); rCtx.rotate(i*(Math.PI*2/37) + 0.08); rCtx.fillStyle="#fff"; rCtx.font="bold 12px Arial"; rCtx.fillText(rNums[i], 155, 5); rCtx.restore();
+        }
+        rCtx.restore();
+        rCtx.beginPath(); rCtx.fillStyle = "#d4af37"; rCtx.arc(0,0,120,0,7); rCtx.fill();
+        rCtx.restore();
+        if(bSpeed > 0) {
+            let bx = 225 + Math.cos(bAng)*bRad, by = 225 + Math.sin(bAng)*bRad;
+            rCtx.fillStyle="#fff"; rCtx.beginPath(); rCtx.arc(bx,by,7,0,7); rCtx.fill();
+        }
+    }
+    function setRouBet(c) { rBet = c; document.getElementById('rouSpin').disabled = false; }
+    function startRoulette() {
+        if(cash < 1000 || isBusy) return;
+        cash -= 1000; isBusy = true; updateUI(); bSpeed = 0.35; bRad = 185;
+        let iv = setInterval(() => {
+            rAng += 0.04; bAng -= bSpeed; bSpeed *= 0.99; if(bSpeed < 0.08) bRad -= 2;
+            if(bRad <= 145) {
+                clearInterval(iv); isBusy = false;
+                let final = (bAng - rAng) % (Math.PI*2); if(final < 0) final += (Math.PI*2);
+                let num = rNums[Math.floor(final / (Math.PI*2/37))];
+                let col = num==0?'green':([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(num)?'red':'black');
+                if(rBet == col) cash += (col == 'green' ? 14000 : 2000) * multiplier;
+                document.getElementById('rou-res').innerText = "Ergebnis: " + num + " (" + col.toUpperCase() + ")"; updateUI();
+            }
+            drawRoulette();
+        }, 30);
+    }
+
+    // --- PLINKO ---
+    const pCanv = document.getElementById('plinkoCanvas'); const pCtx = pCanv.getContext('2d');
+    const pVals = [2, 10, 20, 100, 20, 10, 2];
+    const labelRow = document.getElementById('plinko-labels-row');
+    pVals.forEach(v => { let l = document.createElement('div'); l.className = 'plinko-label'; l.innerText = 'x' + v; labelRow.appendChild(l); });
+    function drawP() {
+        pCtx.clearRect(0,0,400,380); pCtx.fillStyle = "#d4af37";
+        for(let r=2; r<11; r++) for(let c=0; c<=r; c++) { pCtx.beginPath(); pCtx.arc(200 - (r*18) + (c*36), r*32, 3, 0, 7); pCtx.fill(); }
+    }
+    function dropPlinko() {
+        let b = parseInt(document.getElementById('p-bet').value); if(cash < b || isBusy) return;
+        cash -= b; isBusy = true; updateUI(); let bx = 200, by = 20, s = 0;
+        let iv = setInterval(() => {
+            drawP(); by += 32; bx += (Math.random() > (bx > 200 ? 0.6 : 0.4) ? 18 : -18);
+            pCtx.fillStyle = "#fff"; pCtx.beginPath(); pCtx.arc(bx, by, 8, 0, 7); pCtx.fill();
+            if(++s >= 10) { clearInterval(iv); isBusy = false; cash += (b * pVals[Math.min(Math.max(Math.floor(bx / 57),0),6)]) * multiplier; updateUI(); }
+        }, 110);
+    }
+
+    // --- SCRATCH ---
+    const sCanvas = document.getElementById('scratch-canvas'); const sCtx = sCanvas.getContext('2d');
+    let sWin = 0, sDown = false;
+    function buyScratch(cost, max, name) {
+        if(cash < cost || isBusy) return;
+        cash -= cost; isBusy = true; updateUI();
+        document.getElementById('scratch-selection').style.display='none';
+        document.getElementById('scratch-container').style.display='block';
+        document.getElementById('s-status').innerText = "Rubbeln Sie das " + name + " frei!";
+        
+        sWin = name == 'Sacrifice' ? (Math.random() > 0.5 ? cost*2 : 0) : (Math.random() > 0.45 ? Math.random() * max * multiplier : 0);
+        document.getElementById('scratch-prize').innerText = Math.floor(sWin).toLocaleString() + " $";
+        
+        sCtx.globalCompositeOperation = 'source-over';
+        sCtx.fillStyle = name.includes('Sovereign') ? '#fff' : (name.includes('Smaragd') ? '#10b981' : '#666');
+        sCtx.fillRect(0,0,400,200);
+        sCtx.fillStyle = "#000"; sCtx.font="bold 20px Cinzel"; sCtx.textAlign="center"; sCtx.fillText(name.toUpperCase(), 200, 110);
+    }
+    sCanvas.onmousedown = () => sDown = true;
+    window.onmouseup = () => { if(sDown) { cash += sWin; sDown = false; isBusy = false; updateUI(); setTimeout(() => { document.getElementById('scratch-container').style.display='none'; document.getElementById('scratch-selection').style.display='block'; document.getElementById('s-status').innerText = "Bereit für das nächste Los."; }, 1000); } };
+    sCanvas.onmousemove = (e) => { if(sDown) { let r = sCanvas.getBoundingClientRect(); sCtx.globalCompositeOperation = 'destination-out'; sCtx.beginPath(); sCtx.arc(e.clientX-r.left, e.clientY-r.top, 30, 0, 7); sCtx.fill(); } };
+
+    // --- SHOP ---
+    function initShop() {
+        const list = document.getElementById('gadget-list');
+        powerUpgrades.forEach((g, i) => {
+            let div = document.createElement('div'); div.className = 'shop-item';
+            div.innerHTML = `<span class="item-name">${g.n}</span><span style="color:#0f0;font-weight:bold;">x${g.m}</span><br><span>${g.c.toLocaleString()} $</span><br><button class="btn" id="buy-${i}" onclick="buyPower(${i})">Kaufen</button>`;
+            list.appendChild(div);
+        });
+    }
+    function buyPower(i) { let item = powerUpgrades[i]; if(cash >= item.c) { cash -= item.c; multiplier = item.m; document.getElementById(`buy-${i}`).disabled = true; updateUI(); } }
+
+    drawP(); setInterval(drawRoulette, 40); initShop(); updateUI();
+</script>
+</body>
+</html>
